@@ -32,9 +32,9 @@ func testLoggerConcurrentAppend(t *testing.T) {
 	}
 	wg.Wait()
 
-	popWithExpected("nemo", rb, t)
-	popWithExpected("nemo", rb, t)
-	popWithExpected("nemo", rb, t)
+	popWithExpected("nemo", rb, false, t)
+	popWithExpected("nemo", rb, false, t)
+	popWithExpected("nemo", rb, false, t)
 }
 
 // TestRingBuffer runs a variety of subtests covering RingBuffer usage
@@ -69,13 +69,13 @@ func testRingBufferSetPriority(t *testing.T) {
 func testRingBufferWrite(t *testing.T) {
 	rb := NewRingBuffer(Minor, 3)
 	rb.Write([]byte("nemo"))
-	popWithExpected("nemo", rb, t)
+	popWithExpected("nemo", rb, false, t)
 }
 
 func testRingBufferPWrite(t *testing.T) {
 	rb := NewRingBuffer(Minor, 3)
 	rb.PWrite(Major, []byte("nemo"))
-	popWithExpected("nemo", rb, t)
+	popWithExpected("nemo", rb, false, t)
 }
 
 // testRingBufferPop inserts some strings in random order and asserts that they are
@@ -91,14 +91,14 @@ func testRingBufferPop(t *testing.T) {
 	rb.PWrite(Critical, []byte("critical1"))
 	rb.PWrite(Trivial, []byte("trivial1"))
 
-	popWithExpected("critical1", rb, t)
-	popWithExpected("critical0", rb, t)
-	popWithExpected("major1", rb, t)
-	popWithExpected("major0", rb, t)
-	popWithExpected("minor1", rb, t)
-	popWithExpected("minor0", rb, t)
-	popWithExpected("trivial1", rb, t)
-	popWithExpected("trivial0", rb, t)
+	popWithExpected("critical1", rb, false, t)
+	popWithExpected("critical0", rb, false, t)
+	popWithExpected("major1", rb, false, t)
+	popWithExpected("major0", rb, false, t)
+	popWithExpected("minor1", rb, false, t)
+	popWithExpected("minor0", rb, false, t)
+	popWithExpected("trivial1", rb, false, t)
+	popWithExpected("trivial0", rb, false, t)
 }
 
 // testRingBufferOverflow asserts that RingBuffer displays proper overflow behavior
@@ -113,20 +113,20 @@ func testRingBufferOverflow(t *testing.T) {
 	rb.Write([]byte("5"))
 	rb.Write([]byte("6"))
 
-	popWithExpected("6", rb, t)
-	popWithExpected("5", rb, t)
-	popWithExpected("4", rb, t)
-	popWithExpected("3", rb, t)
-	popWithExpected("2", rb, t)
-	if _, err := rb.Pop(); err == nil {
+	popWithExpected("6", rb, false, t)
+	popWithExpected("5", rb, false, t)
+	popWithExpected("4", rb, false, t)
+	popWithExpected("3", rb, false, t)
+	popWithExpected("2", rb, false, t)
+	if _, err := rb.Pop(false); err == nil {
 		t.Log("err should not be nil")
 		t.Fail()
 	}
 }
 
 // popWithExpected is a quick helper method for making the above test code easier to read
-func popWithExpected(expected string, rb *RingBuffer, t *testing.T) {
-	if s, err := rb.Pop(); err != nil || s != expected {
+func popWithExpected(expected string, rb *RingBuffer, prefix bool, t *testing.T) {
+	if s, err := rb.Pop(prefix); err != nil || s != expected {
 		t.Logf("err: %v || %s != %s\n", err, s, expected)
 		t.Fail()
 	}

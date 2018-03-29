@@ -18,6 +18,21 @@ const (
 	Critical
 )
 
+func PriorityString(p LogPriority) string {
+	switch p {
+	case Trivial:
+		return "Trivial"
+	case Minor:
+		return "Minor"
+	case Major:
+		return "Major"
+	case Critical:
+		return "Critical"
+	default:
+		return "Unsupported"
+	}
+}
+
 // Logger stores logs in buffer interface and enables writing to that buffer
 type Logger struct {
 	buf  Buffer
@@ -90,7 +105,7 @@ func (l *Logger) GetBuffer() Buffer {
 // Buffer allows you to define custom write and output behavior while still implementing
 // the io.Writer interface for use with other packages
 type Buffer interface {
-	Pop() (string, error)
+	Pop(bool) (string, error)
 	Write([]byte) (int, error)
 	PWrite(LogPriority, []byte) (int, error)
 	GetPriority() LogPriority
@@ -131,7 +146,7 @@ func (r *RingBuffer) SetPriority(p LogPriority) {
 
 // Pop returns the RingBuffer's contents prioritizing higher priority and newer
 // logs first
-func (r *RingBuffer) Pop() (string, error) {
+func (r *RingBuffer) Pop(priPrefix bool) (string, error) {
 	_, ok := r.buf[r.highP]
 	if !ok {
 		return "", fmt.Errorf("Buffer is empty")
@@ -141,6 +156,12 @@ func (r *RingBuffer) Pop() (string, error) {
 	b, ok := r.buf[r.highP].Value.([]byte)
 	if !ok {
 		return "", fmt.Errorf("pop type assertion failed")
+	}
+	var ret string
+	if priPrefix {
+		ret = fmt.Sprintf("%s %s", PriorityString(LogPriority(r.highP)), string(b))
+	} else {
+		ret = string(b)
 	}
 
 	r.buf[r.highP].Value = nil
@@ -153,7 +174,7 @@ func (r *RingBuffer) Pop() (string, error) {
 		}
 	}
 
-	return string(b), nil
+	return ret, nil
 }
 
 // Write write a slice of bytes (p) into it's ring buffer
